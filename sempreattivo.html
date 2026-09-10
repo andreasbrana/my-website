@@ -68,7 +68,7 @@
 
   <!-- Overlay iniziale (i browser richiedono un tocco dell'utente per tenere lo schermo acceso) -->
   <div id="overlay">
-    <button class="btn" id="start-btn">Tocca per attivare lo schermo bianco</button>
+    <button class="btn" id="start-btn">Start</button>
   </div>
 
   <!-- Video MP4 in formato base64 silenzioso e cortissimo per fallback -->
@@ -119,7 +119,7 @@
       // 1. Richiedi il blocco dello schermo
       await requestWakeLock();
 
-      // 2. Nascondi il pulsante e rendi la pagina completamente bianca
+      // 2. Nascondi il pulsante e rendi la pagina completamente nera
       overlay.style.opacity = '0';
       setTimeout(() => {
         overlay.style.display = 'none';
