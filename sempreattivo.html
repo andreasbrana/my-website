@@ -1,1 +1,135 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <!-- Mantiene la scala corretta su dispositivi mobili e nasconde le barre su iOS se salvata in Home -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Schermo Bianco - Always On</title>
+  
+  <style>
+    /* Reset e sfondo completamente bianco */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: #ffffff;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Pulsante sovrapposto per attivare lo schermo attivo */
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: #ffffff;
+      color: #333333;
+      z-index: 10;
+      cursor: pointer;
+      transition: opacity 0.5s ease;
+    }
+
+    .btn {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      border: 2px solid #333;
+      background-color: transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    /* Video trasparente per il fallback su browser datati */
+    #fallback-video {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0.01;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay iniziale (i browser richiedono un tocco dell'utente per tenere lo schermo acceso) -->
+  <div id="overlay">
+    <button class="btn" id="start-btn">Tocca per attivare lo schermo bianco</button>
+  </div>
+
+  <!-- Video MP4 in formato base64 silenzioso e cortissimo per fallback -->
+  <video id="fallback-video" loop playsinline muted>
+    <source src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAAhmcmVlAAAAAG1kYXQAAAA=" type="video/mp4">
+  </video>
+
+  <script>
+    let wakeLock = null;
+    const overlay = document.getElementById('overlay');
+    const startBtn = document.getElementById('start-btn');
+    const fallbackVideo = document.getElementById('fallback-video');
+
+    // Funzione principale per richiedere il Wake Lock (API nativa)
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('Screen Wake Lock attivo.');
+        } else {
+          useFallback();
+        }
+      } catch (err) {
+        console.warn(`Wake Lock non riuscito: ${err.name}, ${err.message}. Uso fallback.`);
+        useFallback();
+      }
+    }
+
+    // Fallback con video invisibile per dispositivi/browser meno recenti
+    function useFallback() {
+      fallbackVideo.play().then(() => {
+        console.log('Fallback video attivo per mantenere lo schermo acceso.');
+      }).catch(err => {
+        console.error('Impossibile avviare il video di fallback:', err);
+      });
+    }
+
+    // Gestione del cambio di scheda o minimizzazione dell'app
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible' && overlay.style.display === 'none') {
+        // Se l'utente torna sull'app, riattiviamo il blocco dello schermo
+        await requestWakeLock();
+      }
+    });
+
+    // Avvio con tocco utente
+    startBtn.addEventListener('click', async () => {
+      // 1. Richiedi il blocco dello schermo
+      await requestWakeLock();
+
+      // 2. Nascondi il pulsante e rendi la pagina completamente bianca
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, 500);
+
+      // 3. Opzionale: Prova a mettere la pagina a schermo intero se il dispositivo lo consente
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    });
+  </script>
+</body>
+</html>
